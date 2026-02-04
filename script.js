@@ -16,8 +16,31 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', () => {
             if (window.getComputedStyle(navbarToggler).display !== 'none') {
-                const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
-                if (bsCollapse) bsCollapse.hide();
+                const bsCollapse = new bootstrap.Collapse(navbarCollapse, {
+                    toggle: false
+                });
+                bsCollapse.hide();
+            }
+        });
+    });
+
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                e.preventDefault();
+                const navHeight = document.querySelector('.navbar').offsetHeight;
+                const elementPosition = targetElement.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - navHeight;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
             }
         });
     });
@@ -32,14 +55,46 @@ document.addEventListener("DOMContentLoaded", function () {
         entries.forEach((entry) => {
             if (entry.isIntersecting) {
                 entry.target.classList.add("visible");
-                // Optional: stop observing once revealed
-                // observer.unobserve(entry.target);
             }
         });
     }, observerOptions);
 
     document.querySelectorAll(".fade-up").forEach((el) => {
         observer.observe(el);
+    });
+
+    // Active Navigation Link Highlighting via IntersectionObserver
+    const sections = document.querySelectorAll("section");
+    const navLi = document.querySelectorAll(".navbar-nav .nav-item .nav-link");
+
+    const sectionObserverOptions = {
+        root: null,
+        threshold: 0.25, // Trigger when 25% of the section is visible
+        rootMargin: "-100px 0px -50px 0px" // Offset for navbar height
+    };
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                let current = entry.target.getAttribute("id");
+
+                // Special case for "Home" if near top
+                if (window.scrollY < 100) {
+                    current = "home";
+                }
+
+                navLi.forEach((li) => {
+                    li.classList.remove("active");
+                    if (li.getAttribute("href").includes(current)) {
+                        li.classList.add("active");
+                    }
+                });
+            }
+        });
+    }, sectionObserverOptions);
+
+    sections.forEach((section) => {
+        sectionObserver.observe(section);
     });
 
     // Refined Typing Effect
@@ -114,7 +169,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 })
                 .catch(error => {
                     console.error('Error!', error.message);
-                    // Fallback for no-cors/success
                     formStatus.className = 'mt-4 text-center text-success';
                     formStatus.textContent = 'Thank you. Your message has been received successfully.';
                     contactForm.reset();
